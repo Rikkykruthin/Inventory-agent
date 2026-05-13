@@ -264,5 +264,3 @@ open http://localhost:8000/docs
 
 **Ollama not found**
 → Install Ollama from https://ollama.ai/ and run `ollama pull llama2`
-
-# Inventory-agent
