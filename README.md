@@ -16,7 +16,7 @@ Traditional inventory systems use fixed thresholds (reorder when stock < X). Thi
 
 ```bash
 # 1. Clone and setup
-git clone <your-repo-url>
+git clone https://github.com/Rikkykruthin/Inventory-agent.git
 cd inventory-agent
 python -m venv venv
 source venv/bin/activate  # On Windows: venv\Scripts\activate
