@@ -1,0 +1,475 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Inventory Reorder Decision System</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f8f9fa;
+            min-height: 100vh;
+            padding: 40px 20px;
+            color: #1a1a1a;
+        }
+        
+        .container {
+            max-width: 1100px;
+            margin: 0 auto;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 50px;
+        }
+        
+        .header h1 {
+            font-size: 2.8em;
+            font-weight: 700;
+            color: #1a1a1a;
+            margin-bottom: 12px;
+            letter-spacing: -0.02em;
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            color: #6b7280;
+            font-weight: 400;
+        }
+        
+        .card {
+            background: white;
+            border-radius: 16px;
+            padding: 40px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+            border: 1px solid #e5e7eb;
+            margin-bottom: 24px;
+        }
+        
+        .card h2 {
+            font-size: 1.5em;
+            font-weight: 600;
+            color: #1a1a1a;
+            margin-bottom: 24px;
+        }
+        
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+            margin-bottom: 32px;
+        }
+        
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .form-group label {
+            font-weight: 500;
+            margin-bottom: 8px;
+            color: #374151;
+            font-size: 0.875em;
+            letter-spacing: 0.01em;
+        }
+        
+        .form-group input {
+            padding: 12px 14px;
+            border: 1px solid #d1d5db;
+            border-radius: 8px;
+            font-size: 0.95em;
+            transition: all 0.2s;
+            background: #ffffff;
+        }
+        
+        .form-group input:focus {
+            outline: none;
+            border-color: #2563eb;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        }
+        
+        .btn {
+            background: #2563eb;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            font-size: 1em;
+            font-weight: 600;
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.2s;
+            width: 100%;
+            letter-spacing: 0.01em;
+        }
+        
+        .btn:hover {
+            background: #1d4ed8;
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            transform: none;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 60px 40px;
+            color: #6b7280;
+            font-size: 1.1em;
+        }
+        
+        .spinner {
+            border: 3px solid #e5e7eb;
+            border-top: 3px solid #2563eb;
+            border-radius: 50%;
+            width: 48px;
+            height: 48px;
+            animation: spin 0.8s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .results {
+            display: none;
+        }
+        
+        .results.show {
+            display: block;
+        }
+        
+        .agent-card {
+            background: #ffffff;
+            border: 1px solid #e5e7eb;
+            border-radius: 12px;
+            padding: 28px;
+            margin-bottom: 16px;
+            transition: all 0.2s;
+        }
+        
+        .agent-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+        }
+        
+        .agent-card.conservative {
+            border-left: 4px solid #3b82f6;
+        }
+        
+        .agent-card.aggressive {
+            border-left: 4px solid #ef4444;
+        }
+        
+        .agent-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+        
+        .agent-name {
+            font-size: 1.25em;
+            font-weight: 600;
+            color: #1a1a1a;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .agent-quantity {
+            font-size: 1.75em;
+            font-weight: 700;
+            color: #1a1a1a;
+        }
+        
+        .confidence {
+            display: inline-block;
+            background: #f3f4f6;
+            color: #374151;
+            padding: 6px 14px;
+            border-radius: 6px;
+            font-size: 0.85em;
+            font-weight: 600;
+            letter-spacing: 0.01em;
+        }
+        
+        .reasoning {
+            color: #4b5563;
+            line-height: 1.7;
+            margin-top: 12px;
+            font-size: 0.95em;
+        }
+        
+        .final-decision {
+            background: #1a1a1a;
+            color: white;
+            padding: 40px;
+            border-radius: 16px;
+            text-align: center;
+            margin-top: 24px;
+            border: 1px solid #2a2a2a;
+        }
+        
+        .final-decision h2 {
+            font-size: 1.5em;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .final-decision .quantity {
+            font-size: 3.5em;
+            font-weight: 700;
+            margin: 24px 0;
+            letter-spacing: -0.02em;
+        }
+        
+        .final-decision .confidence {
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 1em;
+            padding: 8px 18px;
+        }
+        
+        .weighted {
+            font-size: 1em;
+            opacity: 0.8;
+            margin-top: 16px;
+            font-weight: 500;
+        }
+        
+        .final-decision .reasoning {
+            color: rgba(255,255,255,0.85);
+            margin-top: 24px;
+            font-size: 1em;
+        }
+        
+        .error {
+            background: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            padding: 20px;
+            border-radius: 12px;
+            margin-top: 20px;
+        }
+        
+        .badge {
+            display: inline-block;
+            background: #eff6ff;
+            color: #1e40af;
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.75em;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-left: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Inventory Reorder Decision System</h1>
+            <p>Multi-Agent AI Analysis: Conservative · Aggressive · Mediator</p>
+        </div>
+        
+        <div class="card">
+            <h2>Product Inventory Data</h2>
+            <form id="inventoryForm">
+                <div class="form-grid">
+                    <div class="form-group">
+                        <label for="product_id">Product ID</label>
+                        <input type="text" id="product_id" value="SKU-12345" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="product_name">Product Name</label>
+                        <input type="text" id="product_name" value="Organic Coffee Beans 1kg" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="current_stock">Current Stock (units)</label>
+                        <input type="number" id="current_stock" value="45" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="sales_velocity">Sales Velocity (units/day)</label>
+                        <input type="number" id="sales_velocity" value="12" step="0.1" min="0.1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="lead_time_days">Lead Time (days)</label>
+                        <input type="number" id="lead_time_days" value="7" min="1" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="holding_cost_per_unit">Holding Cost ($/unit/month)</label>
+                        <input type="number" id="holding_cost_per_unit" value="2.50" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="stockout_cost_per_unit">Stockout Cost ($/unit)</label>
+                        <input type="number" id="stockout_cost_per_unit" value="15.00" step="0.01" min="0" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="unit_cost">Unit Cost ($)</label>
+                        <input type="number" id="unit_cost" value="8.00" step="0.01" min="0.01" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="safety_stock_days">Safety Stock (days)</label>
+                        <input type="number" id="safety_stock_days" value="3" min="0" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn" id="submitBtn">
+                    Get AI Recommendation
+                </button>
+            </form>
+        </div>
+        
+        <div id="loading" class="card loading" style="display: none;">
+            <div class="spinner"></div>
+            <p>AI agents are analyzing your inventory data...</p>
+        </div>
+        
+        <div id="error" class="error" style="display: none;"></div>
+        
+        <div id="results" class="results">
+            <div class="card">
+                <h2>Agent Recommendations</h2>
+                
+                <div class="agent-card conservative">
+                    <div class="agent-header">
+                        <div class="agent-name">
+                            Conservative Agent
+                            <span class="confidence" id="conservative-confidence"></span>
+                        </div>
+                        <div class="agent-quantity" id="conservative-quantity"></div>
+                    </div>
+                    <div class="reasoning" id="conservative-reasoning"></div>
+                </div>
+                
+                <div class="agent-card aggressive">
+                    <div class="agent-header">
+                        <div class="agent-name">
+                            Aggressive Agent
+                            <span class="confidence" id="aggressive-confidence"></span>
+                        </div>
+                        <div class="agent-quantity" id="aggressive-quantity"></div>
+                    </div>
+                    <div class="reasoning" id="aggressive-reasoning"></div>
+                </div>
+                
+                <div class="final-decision">
+                    <h2>Final Decision</h2>
+                    <div class="quantity" id="final-quantity"></div>
+                    <div class="confidence" id="final-confidence"></div>
+                    <div class="weighted" id="final-weighted"></div>
+                    <div class="reasoning" id="final-reasoning"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script>
+        const form = document.getElementById('inventoryForm');
+        const loading = document.getElementById('loading');
+        const results = document.getElementById('results');
+        const errorDiv = document.getElementById('error');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            // Hide previous results and errors
+            results.classList.remove('show');
+            errorDiv.style.display = 'none';
+            loading.style.display = 'block';
+            submitBtn.disabled = true;
+            
+            // Collect form data
+            const data = {
+                product_id: document.getElementById('product_id').value,
+                product_name: document.getElementById('product_name').value,
+                current_stock: parseInt(document.getElementById('current_stock').value),
+                sales_velocity: parseFloat(document.getElementById('sales_velocity').value),
+                lead_time_days: parseInt(document.getElementById('lead_time_days').value),
+                holding_cost_per_unit: parseFloat(document.getElementById('holding_cost_per_unit').value),
+                stockout_cost_per_unit: parseFloat(document.getElementById('stockout_cost_per_unit').value),
+                unit_cost: parseFloat(document.getElementById('unit_cost').value),
+                safety_stock_days: parseInt(document.getElementById('safety_stock_days').value)
+            };
+            
+            try {
+                const response = await fetch('/api/decide', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+                
+                if (!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.detail || 'API request failed');
+                }
+                
+                const result = await response.json();
+                
+                // Display results
+                displayResults(result);
+                
+            } catch (error) {
+                errorDiv.textContent = `Error: ${error.message}`;
+                errorDiv.style.display = 'block';
+            } finally {
+                loading.style.display = 'none';
+                submitBtn.disabled = false;
+            }
+        });
+        
+        function displayResults(data) {
+            // Conservative agent
+            document.getElementById('conservative-quantity').textContent = 
+                `${data.conservative_agent.recommended_quantity} units`;
+            document.getElementById('conservative-confidence').textContent = 
+                `${(data.conservative_agent.confidence * 100).toFixed(0)}% confident`;
+            document.getElementById('conservative-reasoning').textContent = 
+                data.conservative_agent.reasoning;
+            
+            // Aggressive agent
+            document.getElementById('aggressive-quantity').textContent = 
+                `${data.aggressive_agent.recommended_quantity} units`;
+            document.getElementById('aggressive-confidence').textContent = 
+                `${(data.aggressive_agent.confidence * 100).toFixed(0)}% confident`;
+            document.getElementById('aggressive-reasoning').textContent = 
+                data.aggressive_agent.reasoning;
+            
+            // Mediator decision
+            document.getElementById('final-quantity').textContent = 
+                `${data.mediator_agent.final_quantity} units`;
+            document.getElementById('final-confidence').textContent = 
+                `${(data.mediator_agent.confidence * 100).toFixed(0)}% confident`;
+            document.getElementById('final-weighted').textContent = 
+                `Weighted toward: ${data.mediator_agent.weighted_toward}`;
+            document.getElementById('final-reasoning').textContent = 
+                data.mediator_agent.reasoning;
+            
+            // Show results
+            results.classList.add('show');
+            results.scrollIntoView({ behavior: 'smooth' });
+        }
+    </script>
+</body>
+</html>
